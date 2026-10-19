@@ -49,12 +49,14 @@ Kokuyo Obsidian solves these challenges by consolidating all six media categorie
 ## 2. Core Features
 
 - **Universal Media Tracking & Bi-Directional Linked Steppers**: Granular lifecycle tracking across six distinct entertainment categories (Anime, Manga, Movies, TV Series, Books, and Games) featuring bi-directional linked progress steppers (Season <-> Episode for TV and Volume <-> Chapter for Manga) that automatically synchronize progress counts and status milestones (Watching, Reading, Playing vs. Completed) alongside direct watch/read streaming redirects.
-- **Interactive Drag-and-Drop Playlists & Catalog Discovery**: Dynamic multi-category custom playlist curation with native HTML5 drag-and-drop reordering, edge auto-scrolling, real-time index persistence, and multi-source third-party discovery integration (Jikan, TMDB, Google Books, Open Library, IGDB) coupled with fuzzy search matching and dynamic missing-cover filters with automated background refetching.
+- **Interactive Drag-and-Drop Playlists & Catalog Discovery**: Dynamic multi-category custom playlist curation with native HTML5 drag-and-drop reordering, edge auto-scrolling, real-time index persistence, and multi-source third-party discovery integration (AniList, Jikan, TMDB, Google Books, Open Library, IGDB) with dynamic missing-cover filters and automated background refetching.
+- **Typo-Tolerant Fuzzy Search**: A shared frontend/backend scoring engine that forgives typos ("narto" → *Naruto*), punctuation and accents ("spiderman" → *Spider-Man*, "pokemon" → *Pokémon*) and word order, while ranking exact titles first. Sequel and season numbers are matched by value, including roman numerals and ordinals ("final fantasy 7" → *Final Fantasy VII*, "godfather 2" → *Part II*), and titles in any script (Japanese, Hindi, Cyrillic) are searchable. Two-letter searches ("Up", "Oz") match whole words only, never fragments inside other words.
+- **Source-Verified Shared Catalog**: Titles are stored once in a shared catalog. New entries are built server-side from the source API's own metadata, never from client input, and surfaced with a *Kokuyō Verified* badge. Titles stay copyable with the mouse while the rest of the interface remains non-selectable.
 - **Social Network, Friend Collections & Add-to-Library Sync**: Granular friend connection system utilizing shareable platform ID invites, pending request counters with automated 7-day reminder notifications, mutual collection inspection, and 1-click "Add to Kokuyo Obsidian" metadata cloning that imports catalog entries directly into personal tracking lists.
 - **Community Reviews & Reaction-Driven Recommendation Feed**: Public review feeds with score calculations and community recommendation engine allowing users to publish curated suggestions with interactive, mutually exclusive Like/Dislike reactions, live counter synchronization, and role-based moderation.
-- **Multi-Tier Subscription & Dynamic Currency Engine**: Flexible subscription tier engine (Rookie, Enthusiast, Otaku, and ₹3 / $0.99 7-day Trial Pass) with automated IP geolocation currency detection (INR ₹ / USD $), admin-configurable Universal USD Markup benchmarking (((INR / 86.5) + markup) with .49/.99 rounding), automated feature limit gates, soft-locking of excess items on plan expiration, and smart dual-payment routing (domestic UPI QR micropayments vs. Dodo Payments global card/checkout).
+- **Multi-Tier Subscription & Dynamic Currency Engine**: Flexible subscription tier engine (Rookie, Enthusiast, Otaku, and ₹3 / $0.99 7-day Trial Pass) with automated IP geolocation currency detection (INR ₹ / USD $), admin-configurable Universal USD Markup benchmarking (((INR / 86.5) + markup) with .49/.99 rounding), automated feature limit gates, soft-locking of excess items on plan expiration, and smart dual-payment routing (domestic UPI QR micropayments vs. Dodo Payments global card/checkout). Dodo payments are credited exactly once via signature-verified webhooks or return-page verification, and manual UPI transfers carry the user's Platform ID or email in the payment note so administrators can match them before approval.
 - **Enterprise PDF Invoicing & Financial Audit Trail**: Automated transaction dashboard with KPI summaries, live search, and on-demand browser PDF Tax Invoice streaming powered by PDFKit, complete with official platform headers, Billed-To/Issued-By cards, audit clearance codes, dual-currency formatting, automated Gmail dispatch, and graceful 7-day privacy purges of user-uploaded bank payment proofs.
-- **Hardened 7-Day Sliding Sessions & Anti-Abuse Device Guard**: Security architecture featuring sliding 7-day refresh tokens that automatically extend on user activity, multi-tab rotation race condition protection, strict 3-device concurrent session caps with auto-eviction, automatic multi-session revocation on password changes, 180-day SHA-256 account deletion cooldowns, and fail-closed hardware canvas/audio device fingerprinting (@fingerprintjs/fingerprintjs) blocking ad-blocker disguises and trial exploits.
+- **Hardened 7-Day Sliding Sessions & Anti-Abuse Device Guard**: Security architecture featuring sliding 7-day refresh tokens that automatically extend on user activity, multi-tab rotation race condition protection, strict 3-device concurrent session caps with auto-eviction, instant revocation on logout, device sign-out, password change or ban, 180-day SHA-256 account deletion cooldowns, and fail-closed hardware canvas/audio device fingerprinting (@fingerprintjs/fingerprintjs). Registration asks users to pause ad-blockers or Brave Shields so the device can be identified; login is never restricted.
 - **Administrative Analytics, Policy Versioning & Background Maintenance**: Real-time admin control panel featuring Recharts analytics, user session monitoring, manual subscription overrides, in-memory tier pricing cache invalidation, in-place markdown legal document editing (Terms, Privacy, Refund), and scheduled maintenance routines that purge stale notifications and issue compliance reminders.
 
 ---
@@ -82,7 +84,7 @@ The backend runs automated background monitors on a rolling scheduler loop to ma
 - **Backend & APIs**: [Node.js 22 LTS](https://nodejs.org/) / [Express.js 5](https://expressjs.com/) / Modular REST Architecture / [Helmet](https://helmetjs.github.io/) / [Pino Logger](https://getpino.io/)
 - **Database & ODM**: [MongoDB Atlas](https://www.mongodb.com/) via [Mongoose 9](https://mongoosejs.com/) / Dynamic TTL Indexes / Relational Schema Mapping
 - **Core Languages**: Modern JavaScript (ES Modules) / Strict Node.js 22 ES Syntax / HTML5 Native Drag-and-Drop API
-- **DevOps & CI/CD**: [Docker](https://www.docker.com/) (Multi-Stage Alpine) / [GitHub Actions](https://github.com/features/actions) / [GHCR](https://ghcr.io/) / [runner.js](file:///d:/Swagat/Projects/GitHub%20-%20Swagat%20Gharat/Git%20Pushed/Official/Kokuy%C5%8DObsidianOfficial/runner.js) Supervisor
+- **DevOps & CI/CD**: [Docker](https://www.docker.com/) (Multi-Stage Alpine) / [GitHub Actions](https://github.com/features/actions) / [GHCR](https://ghcr.io/) / `runner.js` Process Supervisor
 - **Cloud & Infrastructure**: [Render](https://render.com/) (Unified Monolith Container) / [ImageKit.io](https://imagekit.io/) CDN / [Upstash Redis](https://redis.io/)
 - **Services & Security**: [Dodo Payments API](https://dodopayments.com/) / Google Gmail API (OAuth2) / [PDFKit](https://pdfkit.org/) / [@fingerprintjs/fingerprintjs](https://github.com/fingerprintjs/fingerprintjs) / Sliding JWT Cookies
 - **Workspace Architecture**: [pnpm Workspaces (v11)](https://pnpm.io/) Monorepo (`kokuyo-monolith`)
@@ -105,7 +107,6 @@ Kokuyo Obsidian/
 ├── pnpm-workspace.yaml         # Monorepo packages definition ('backend', 'frontend')
 ├── pnpm-lock.yaml              # Strict dependency lockfile
 ├── docker-compose.yml          # Multi-container local orchestration (backend, nginx, redis)
-├── DEPLOYMENT.md               # Operational production deployment runbook
 ├── backend/                    # Express 5 REST API & Cloud Services
 │   ├── config/                 # Database, Redis, and Dodo Payments gateway configuration
 │   ├── constants/              # Platform constants, default subscription tiers, legal policies
@@ -115,9 +116,10 @@ Kokuyo Obsidian/
 │   ├── routes/                 # Express API routes (/api/auth, /api/users, /api/admin, etc.)
 │   ├── scripts/                # Database migration, Excel catalog sync, and indexing utilities
 │   ├── services/               # BullMQ background workers, Gmail OAuth2, cleanup, PDF receipts
-│   ├── utils/                  # Structured logger, cron worker, tierCache, sitemap generator
+│   ├── utils/                  # Logger, cron worker, tierCache, fuzzy search, SSRF guard, rate-limit store
 │   ├── .dockerignore           # Backend-level Docker exclusion rules
 │   ├── Dockerfile              # Standalone Node 22 Alpine backend container
+│   ├── eslint.config.js        # Dependency-free backend lint (catches undefined identifiers in CI)
 │   ├── package.json            # Backend dependencies & runtime scripts
 │   └── server.js               # Primary Express server entrypoint
 └── frontend/                   # React 19 + Vite 8 Single Page Application
@@ -142,16 +144,16 @@ Kokuyo Obsidian/
 
 ### Database Models / Schema Entities
 
-- **`User`**: Core account identity with `bcryptjs` password hashing, personal profile statistics, sliding refresh token arrays, and role-based access levels (`user`, `admin`).
-- **`UserMediaEntry`**: Unified polymorphic media record linking user collections across Anime, Manga, Movies, Series, Books, and Games, containing progress counters, scores, notes, and `locked` flags.
-- **`CatalogItem`**: Master media catalog cache storing verified third-party metadata, high-resolution cover image CDN URLs, synopsis, and external streaming platform IDs.
-- **`Playlist`**: Custom user-curated multimedia groupings with custom titles, descriptions, and persisted display priority indexes for drag-and-drop reordering.
-- **`Subscription`**: Active billing state tracking tier levels (`Rookie`, `Enthusiast`, `Otaku`, `Trial`), billing cycles, start/expiration timestamps, renewal status, and payment provider IDs.
-- **`PaymentRecord`**: Immutable financial transaction log storing Dodo Payments clearance IDs, manual UPI verification details, currency (INR/USD), and generated PDF invoice download tokens.
+- **`User`**: Core account identity with `bcryptjs` password hashing, profile settings, playlist preferences, 2-step verification, and sliding refresh-token sessions (each with a stable session ID used for instant revocation), plus role-based access levels (`user`, `admin`).
+- **Catalog models (`Anime`, `Manga`, `Movie`, `Series`, `Book`, `Game`)**: Shared, source-verified media catalog keyed by external IDs (AniList/MAL, TMDB, Google Books/Open Library, IGDB), storing metadata, ImageKit CDN covers, season/volume breakdowns, and streaming availability.
+- **User list models (`UserAnime`, `UserManga`, `UserMovie`, `UserSeries`, `UserBook`, `UserGame`)**: Per-user tracking entries referencing the catalog, containing status, progress counters, completion dates, playlist (`userCollection`) assignment, and `locked` flags. A unique `(user, item)` index prevents duplicates.
+- **`Subscription`**: Active billing state tracking tier levels (`Rookie`, `Enthusiast`, `Otaku`, `Trial`), billing cycles, start/expiration timestamps, and snapshot caps locked at purchase time.
+- **`PaymentRecord`**: Financial transaction log storing Dodo Payments checkout/payment IDs and product IDs, manual UPI verification details, currency (INR/USD), and receipt IDs for PDF invoices.
 - **`TierConfig`**: Dynamic platform configuration caching catalog item limits, friend limits, recommendation caps, and regional pricing tiers in memory.
 - **`Friendship`**: Bi-directional social connection entity capturing relationship statuses (`pending`, `accepted`), requester/recipient pairs, and timestamp tracking for 7-day re-alerts.
-- **`Review`**: Public catalog reviews featuring 10-point granular scoring, spoiler tags, rich editorial commentary, and community reaction counts.
-- **`Recommendation`**: Curated suggestions linking two catalog titles with explanatory notes and mutually exclusive `likes` and `dislikes` user ID arrays.
+- **`Review`**: Platform reviews with ratings and moderated commentary.
+- **`Recommendation`**: Community suggestions of a catalog title from the sender's collection, with a note, rating, and mutually exclusive `likes` and `dislikes` user ID arrays.
+- **`Notification`** / **`SupportMessage`** / **`RedirectPlatform`**: In-app notifications, contact-form messages, and admin-managed watch/read redirect platforms.
 - **`LegalDocument`**: Versioned repository of Terms of Service, Privacy Policy, and Refund Policy documents enabling in-place markdown deployment and tracking user acceptance.
 - **`DeviceFingerprint`**: Hardware hash records mapping canvas, audio, and device parameters to accounts to prevent multi-trial registration abuse.
 - **`DeletedUser`**: Privacy-compliant SHA-256 email hashes retained with a 180-day MongoDB TTL index to enforce a strict account deletion re-registration cooldown.
@@ -192,7 +194,7 @@ sequenceDiagram
 2. **Sliding 7-Day Session Renewal**: When an access token expires, the centralized Axios interceptor intercepts the `401 Unauthorized` response and calls `POST /api/auth/refresh`. The server issues a fresh 7-day refresh token, sliding the expiration window forward continuously. Users only experience session expiry if inactive for 7 consecutive days.
 3. **Multi-Tab Concurrency Grace Period**: To prevent race conditions when multiple browser tabs trigger simultaneous refreshes, rotated tokens retain a `replacedByToken` marker during an atomic window, returning the replacement token instead of invalidating active sessions.
 4. **Strict 3-Session Cap**: The server limits each user to a maximum of 3 concurrent active device sessions. Authenticating a 4th device automatically evicts the oldest session.
-5. **Session Revocation**: Updating passwords or performing an OTP reset immediately purges all other active refresh tokens from the database, instantly terminating sessions across all other physical devices.
+5. **Instant Session Revocation**: Every access token carries the ID of the session it belongs to, and `protect` checks that the session still exists on each request. Logging out, signing out a device from the Sessions panel, changing or resetting a password, or being banned therefore takes effect immediately rather than when the 15-minute access token expires.
 6. **Limit Gatekeeping**: When adding items exceeding subscription caps, the server returns `403 Forbidden` (`limitReached: true`). The frontend interceptor captures this and presents an interactive upgrade modal (`GlobalLimitModal`) guiding the user to `/pricing`.
 
 ---
@@ -243,10 +245,10 @@ BOLLYFLIX_URL=https://bollyflix.med
 
 # ── Dodo Payments Gateway ─────────────────────────────────────────────────────
 DODO_PAYMENTS_API_KEY=your_dodo_payments_api_key
-DODO_PAYMENTS_WEBHOOK_SECRET=your_dodo_payments_webhook_secret
+DODO_PAYMENTS_WEBHOOK_SECRET=your_dodo_payments_webhook_secret  # Required: unsigned webhooks are rejected
 DODO_PAYMENTS_ENVIRONMENT=live_mode  # Use 'test_mode' for local sandbox testing
 
-# ── Redis Cache & Queues (Optional; In-Memory fallback active if unset) ──────
+# ── Redis Cache, Queues & Rate Limits (Optional; In-Memory fallback if unset) ─
 REDIS_URL=redis://default:<password>@your-redis-host.upstash.io:6379
 
 # ── Admin Bootstrap Password (GMAIL_USER acts as default admin email) ─────────
@@ -309,6 +311,9 @@ VITE_API_URL=http://localhost:5000/api
    node --check backend/server.js
    node --check runner.js
 
+   # Lint backend for undefined identifiers (e.g. a missing import)
+   ./frontend/node_modules/.bin/eslint --no-config-lookup -c backend/eslint.config.js backend runner.js
+
    # Run frontend linting & static analysis
    pnpm --filter frontend lint
 
@@ -320,47 +325,61 @@ VITE_API_URL=http://localhost:5000/api
 
 ## 8. API Documentation
 
+`:category` is one of `anime`, `manga`, `movies`, `series`, `books`, `games`.
+
 | Module | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- | :--- |
 | **System** | `GET` | `/ping` | Lightweight heartbeat connectivity ping (`pong`) | No |
 | | `GET` | `/api/health` | Uptime check, Redis connection status, and latency metrics | No |
 | | `GET` | `/sitemap.xml` | Dynamic XML sitemap indexing all public collections & legal routes | No |
-| **Auth** | `POST` | `/api/auth/register` | Register new user with device fingerprint verification | No |
-| | `POST` | `/api/auth/verify-registration` | Complete registration via email OTP verification | No |
-| | `POST` | `/api/auth/login` | Authenticate user credentials, issue access token & refresh cookie | No |
-| | `POST` | `/api/auth/refresh` | Rotate access token & extend sliding 7-day session cookie | No |
-| | `POST` | `/api/auth/forgot-password` | Request password reset verification code via email OTP | No |
-| | `POST` | `/api/auth/reset-forgot-password` | Reset password using verified OTP; revokes all other sessions | No |
-| | `POST` | `/api/auth/logout` | Invalidate active refresh token in database & clear cookies | Yes |
-| **Media & Catalogs** | `GET` | `/api/:category` | Fetch paginated user collection items for category | Yes |
-| | `POST` | `/api/:category` | Add media item to user collection (enforces tier capacity limit) | Yes |
-| | `PUT` | `/api/:category/:id` | Update media progress count, score, status, or linked steppers | Yes |
-| | `DELETE` | `/api/:category/:id` | Remove media item from user collection | Yes |
-| | `GET` | `/api/:category/search` | Query third-party media metadata (Jikan, TMDB, Books, IGDB) | Yes |
-| | `POST` | `/api/import` | Bulk import media items from uploaded multi-sheet Excel file | Yes |
-| **Playlists** | `GET` | `/api/users/playlists` | Fetch all custom multi-category playlists for active user | Yes |
-| | `POST` | `/api/users/playlists` | Create new playlist with title and initial media references | Yes |
-| | `PUT` | `/api/users/playlists/reorder` | Persist reordered playlist display priority index sequence | Yes |
-| | `DELETE` | `/api/users/playlists/:id` | Delete custom playlist | Yes |
-| **Friends** | `GET` | `/api/friends` | Retrieve active friends list and mutual collection counts | Yes |
-| | `GET` | `/api/friends/requests` | List incoming and outgoing pending friend invitations | Yes |
-| | `POST` | `/api/friends/request/:platformId` | Send friend request using recipient platform ID | Yes |
-| | `PUT` | `/api/friends/respond/:requestId` | Accept or reject pending friend request | Yes |
-| | `GET` | `/api/friends/:friendId/collection` | View friend collection items (respects subscription access limits) | Yes |
-| **Reviews & Recomms** | `GET` | `/api/reviews/:category/:itemId` | Retrieve community reviews and aggregate scores for catalog item | No |
-| | `POST` | `/api/reviews` | Submit scored review and commentary for catalog item | Yes |
-| | `GET` | `/api/recommendations` | Fetch public feed of community media recommendations | No |
-| | `POST` | `/api/recommendations` | Publish new pair recommendation from personal collection | Yes |
-| | `POST` | `/api/recommendations/:id/reaction` | Toggle Like or Dislike reaction on recommendation item | Yes |
-| **Billing & Receipts** | `GET` | `/api/subscription/tiers` | Retrieve cached pricing tiers, limits, and USD markup benchmarks | No |
-| | `POST` | `/api/subscription/checkout` | Initialize Dodo Payments checkout session or UPI transfer intent | Yes |
-| | `POST` | `/api/subscription/webhook` | Process automated Dodo Payments webhook transaction events | No (Signed) |
-| | `GET` | `/api/subscription/transactions` | Fetch user transaction history, reference codes, and plan receipts | Yes |
-| | `GET` | `/api/subscription/receipt/:id/download` | Stream branded executive Tax Invoice PDF generated via PDFKit | Yes |
-| **Admin** | `GET` | `/api/admin/metrics` | Retrieve platform KPIs, user growth, revenue, and active plans | Admin |
-| | `GET` | `/api/admin/users` | Inspect paginated user accounts, sessions, and override plans | Admin |
-| | `PUT` | `/api/admin/tiers/:plan` | Update tier limits/pricing & invalidate in-memory tier cache | Admin |
-| | `GET` | `/api/logs` | Query persisted operational event logs with severity filtering | Admin |
+| **Auth** | `POST` | `/api/auth/register` | Register new user (device fingerprint required; ad-blockers/Shields must be paused) | No |
+| | `POST` | `/api/auth/verify-registration` | Complete registration via email OTP (invalidated after 5 wrong attempts) | No |
+| | `POST` | `/api/auth/login` | Authenticate credentials, issue access token & refresh cookie | No |
+| | `POST` | `/api/auth/verify-two-step` | Complete login with the 2-step verification email code | No |
+| | `POST` | `/api/auth/refresh` | Rotate refresh cookie & extend the sliding 7-day session | Cookie |
+| | `POST` | `/api/auth/logout` | Revoke the current session & clear cookies | Cookie |
+| | `GET` | `/api/auth/me` | Current user profile (session tokens and OTP codes never included) | Yes |
+| | `POST` | `/api/auth/forgot-password` | Request password reset code via email OTP | No |
+| | `POST` | `/api/auth/reset-password` | Reset password using verified OTP; revokes all sessions | No |
+| | `GET` | `/api/auth/sessions` | List active device sessions | Yes |
+| | `POST` | `/api/auth/sessions/clear-one` | Sign out one device (password confirmation) | Yes |
+| | `POST` | `/api/auth/sessions/clear-others` | Sign out all other devices (password confirmation) | Yes |
+| **Media & Catalogs** | `GET` | `/api/:category/search` | Search source APIs merged with the shared catalog (rate-limited per user) | Yes |
+| | `POST` | `/api/:category/add` | Add a title to the collection; new catalog entries are built from source-API data (enforces tier cap) | Yes |
+| | `GET` | `/api/:category/mylist` | Fetch the user's collection for a category | Yes |
+| | `PATCH` | `/api/:category/:id/status` | Update watch/read/play status | Yes |
+| | `PATCH` | `/api/:category/:id/progress` | Update progress, linked steppers, or playlist (`/api/games/:id` for games) | Yes |
+| | `DELETE` | `/api/:category/:id` | Remove a title from the collection | Yes |
+| | `GET` | `/api/books/cover` | Book cover image proxy (allow-listed cover hosts, images only) | No |
+| | `POST` | `/api/import/estimate` · `/lookup` · `/add-to-catalog` | Bulk Excel import into the catalog | Admin |
+| **Users & Playlists** | `GET` / `PATCH` | `/api/users/playlists` | Read or save playlist preferences and custom ordering | Yes |
+| | `PATCH` | `/api/users/profile` | Update profile and 2-step verification (turning it off requires the password) | Yes |
+| | `GET` | `/api/users/search` | Find a user by exact Platform ID | Yes |
+| | `GET` | `/api/users/:platformId/collections` | View a friend's collection (respects plan limits) | Yes |
+| **Friends** | `GET` | `/api/friends` | Active friends list | Yes |
+| | `GET` | `/api/friends/requests` | Pending friend invitations | Yes |
+| | `POST` | `/api/friends/request/:target` | Send friend request by Platform ID | Yes |
+| | `PATCH` | `/api/friends/:requestId/accept` | Accept a pending request (recipient only) | Yes |
+| | `DELETE` | `/api/friends/:requestId` | Decline, cancel, or remove a friendship | Yes |
+| **Reviews & Recomms** | `GET` | `/api/reviews` | Public platform reviews | No |
+| | `POST` / `PUT` / `DELETE` | `/api/reviews` · `/api/reviews/:id` | Create, edit, or delete own review | Yes |
+| | `GET` | `/api/recommendations` | Community recommendation feed | Yes |
+| | `POST` | `/api/recommendations` | Recommend a title from your own collection | Yes |
+| | `POST` | `/api/recommendations/:id/react` | Toggle Like or Dislike | Yes |
+| **Billing & Receipts** | `GET` | `/api/subscription/tiers` | Pricing tiers, limits, and regional currency suggestion | No |
+| | `GET` | `/api/subscription/me` | Current plan, limits, and pending payment status | Yes |
+| | `POST` | `/api/subscription/checkout-dodo` | Create a Dodo Payments checkout session (product resolved server-side) | Yes |
+| | `POST` | `/api/subscription/verify-dodo` | Verify and credit a payment on return from checkout | Yes |
+| | `POST` | `/api/subscription/checkout-manual` | Submit a manual UPI payment with transaction ID and receipt | Yes |
+| | `POST` | `/api/subscription/webhook-dodo` | Dodo Payments webhook events | Signed |
+| | `GET` | `/api/subscription/transactions` | Transaction history | Yes |
+| | `GET` | `/api/subscription/receipt/:paymentId/download` | Stream the PDF Tax Invoice generated via PDFKit | Yes |
+| **Admin** | `GET` | `/api/admin/stats` | Platform KPIs, user growth, revenue, and active plans | Admin |
+| | `GET` | `/api/admin/users` | Inspect user accounts, sessions, and override plans | Admin |
+| | `GET` | `/api/admin/payments` | Payment records with user email and Platform ID for manual verification | Admin |
+| | `POST` | `/api/admin/payments/:id/approve` · `/reject` | Approve (credited exactly once) or reject a manual payment | Admin |
+| | `PUT` | `/api/admin/tiers/:plan` | Update tier limits/pricing & invalidate the tier cache | Admin |
+| | `GET` | `/api/admin/logs/system` | Persisted operational event logs | Admin |
 
 ---
 
@@ -372,12 +391,15 @@ VITE_API_URL=http://localhost:5000/api
   - Refresh tokens are transmitted strictly via `HttpOnly`, `Path=/`, `Secure`, `SameSite=None` (production) cookies, completely shielding credentials from client-side XSS extraction.
 - **Sliding 7-Day Session Management**: Sessions slide forward automatically on active usage with a rolling 7-day expiration. Concurrent multi-tab token requests are protected by an atomic grace period to prevent race-condition invalidations.
 - **Strict 3-Session Active Device Cap**: Enforces a strict maximum of 3 concurrent active sessions per user account across all tiers, preventing credential sharing while automatically evicting the oldest session upon new logins.
-- **Automatic Session Revocation**: Modifying account passwords or executing an OTP password reset immediately revokes all other active refresh tokens from the database across all physical devices.
-- **Device Fingerprint Abuse Guard**: Combines canvas, audio, and hardware platform fingerprinting (`@fingerprintjs/fingerprintjs`) with persistent device UUIDs. Enforces a strict fail-closed registration gate that blocks ad-blocker disguised submissions and duplicate trial exploitation.
+- **Instant Session Revocation**: Access tokens are bound to their session, so logout, device sign-out, password changes/resets, and bans take effect on the very next request. Refresh tokens are unique per issue, and turning off 2-step verification requires the account password.
+- **Device Fingerprint Abuse Guard**: Combines canvas, audio, and hardware platform fingerprinting (`@fingerprintjs/fingerprintjs`) with persistent device UUIDs. Registration is fail-closed: it detects ad-blockers and Brave Shields and asks the user to pause them, and the server re-checks the result. Login is never restricted.
+- **OTP Brute-Force Protection**: Every email OTP flow (registration, 2-step login, password reset) is invalidated after 5 wrong attempts, on top of per-IP+email rate limits.
 - **6-Month Account Deletion Cooldown**: Preserves a SHA-256 hash of deleted user emails in a `DeletedUser` collection for 180 days via a MongoDB TTL index, preventing abusive account re-creation loops.
-- **Granular Rate Limiting**: Tiered express rate limiters protect authentication endpoints (30 attempts / 15m), search APIs, and public interactions, preventing brute-force and resource exhaustion attacks.
-- **HTTP Hardening**: Helmet integration with strict Content Security Policy (CSP), cross-origin resource policy configurations, and client hints for operating system telemetry.
-- **Input Sanitization & Injection Defense**: Mongoose schema sanitization strips unpermitted attributes, while custom error normalizing middleware intercepts internal server errors (500) to prevent stack trace leakage to the client.
+- **Granular, Persistent Rate Limiting**: Tiered limiters protect authentication (10 failed attempts / 15m), OTP, registration, checkout, and search (per user and per IP). Counters live in Redis when available, so they survive deploys, and fall back to memory otherwise.
+- **Payment Integrity**: Webhooks must carry a valid signature, checkout products are resolved server-side, every payment is matched to its own checkout (product and amount), and payment records are claimed atomically so each payment is credited exactly once.
+- **Catalog Integrity & Outbound Request Safety**: Shared catalog entries are built from source-API data only, never from client input. Every server-side fetch of a URL (cover images, uploads, the book cover proxy) is restricted to public addresses, size-capped, and checked to be an image.
+- **HTTP Hardening**: Helmet with a strict Content Security Policy (no inline or `eval` scripts), cross-origin resource policy configuration, and client hints for operating system telemetry.
+- **Input Validation & Error Hygiene**: External IDs, search queries, and auth inputs are type-checked before reaching queries, and error-normalizing middleware replaces internal server errors (500) with a generic message to prevent stack trace leakage.
 
 ---
 
@@ -389,7 +411,7 @@ Kokuyo Obsidian features an automated continuous deployment pipeline combining *
 
 ```mermaid
 flowchart LR
-    A["git push origin main"] --> B["1. Pre-flight Quality Gates\n(Node 22 LTS, pnpm 11, Syntax)"]
+    A["git push origin main"] --> B["1. Pre-flight Quality Gates\n(Node 22 LTS, pnpm 11, Syntax, Lint)"]
     B -->|Pass| C["2. Docker Buildx\n(type=gha layer cache)"]
     C --> D["3. Push to GHCR\n(ghcr.io/...:latest & :sha)"]
     D --> E["4. Render Deploy Hook\n(cURL POST Trigger)"]
@@ -399,6 +421,7 @@ flowchart LR
 1. **Pre-flight Quality Gates**:
    - Executes on an Ubuntu runner with **Node.js 22 LTS** and **pnpm 11** detected automatically from `package.json`'s `"packageManager"` field.
    - Verifies backend syntax (`node --check backend/server.js`) and process supervisor syntax (`node --check runner.js`).
+   - Lints the backend for undefined identifiers (`backend/eslint.config.js`), catching problems such as a missing import that a syntax check cannot see.
    - Runs frontend linting with non-blocking tolerance for pre-existing React 19 compiler warnings (e.g. `set-state-in-effect`), preventing unnecessary gate failures.
    - Compiles production frontend assets with Vite to ensure total build integrity before invoking container engines.
 
@@ -417,7 +440,7 @@ flowchart LR
    - Triggers the Render Deploy Hook via a `POST` request with a graceful chicken-and-egg fallback (exits 0 if `RENDER_DEPLOY_HOOK_URL` is not yet configured, allowing the initial image to be published).
    - Render pulls the pre-built image from GHCR and executes a rolling restart in ~40 seconds with zero downtime.
 
-👉 For detailed step-by-step setup instructions, creating GitHub PAT credentials, configuring Render registry access, and swapping service names without breaking live URLs, consult the operational runbook (`DEPLOYMENT.md`).
+👉 Step-by-step setup (GitHub PAT credentials, Render registry access, renaming services without breaking live URLs) is kept in a private operational runbook that is not published with this repository.
 
 ---
 
