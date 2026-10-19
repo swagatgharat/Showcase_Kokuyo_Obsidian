@@ -35,12 +35,12 @@ Traditional media consumption tracking is severely fragmented—requiring separa
 - **Account Sharing & Trial Abuse**: Vulnerability of subscription platforms to duplicate free-trial exploitation, script-driven spam, and credential reuse across unmonitored devices.
 - **Infrastructure Overhead & Cold-Starts**: Complex multi-service deployments incurring high server hosting costs, cross-origin resource sharing (CORS) latency, and container sleep cycles on free-tier infrastructure.
 
-Kokuyo Obsidian solves these challenges by consolidating all six media categories under a unified database model, introducing bi-directional linked progress steppers, enforcing fail-closed hardware fingerprint authentication, and deploying both frontend and backend within a single, ultra-lean multi-stage container (<220 MB).
+Kokuyo Obsidian solves these challenges by consolidating all six media categories around one shared catalog with per-category tracking lists, introducing bi-directional linked progress steppers, enforcing fail-closed device fingerprinting at registration, and deploying both frontend and backend within a single multi-stage Alpine container.
 
 ### Target Users
 
 - **Media Enthusiasts & Otakus**: Power users tracking extensive libraries across anime, manga, literature, gaming, movies, and series with granular progress tracking and linked steppers.
-- **Curators & Collectors**: Organizers who assemble custom multi-category playlists with drag-and-drop reordering and maintain offline Excel backups with round-trip synchronization.
+- **Curators & Collectors**: Organizers who assemble custom multi-category playlists with drag-and-drop reordering. Administrators can bulk import and export collections and the catalog via Excel.
 - **Social Trackers & Community Members**: Friends sharing libraries via invite links, copying catalog items with 1-click import actions, and interacting with community recommendations.
 - **Platform Administrators & Hiring Teams**: Auditors evaluating strict enterprise security practices, multi-tier monetization models, sliding session defenses, and automated CI/CD container pipelines.
 
@@ -55,9 +55,9 @@ Kokuyo Obsidian solves these challenges by consolidating all six media categorie
 - **Social Network, Friend Collections & Add-to-Library Sync**: Granular friend connection system utilizing shareable platform ID invites, pending request counters with automated 7-day reminder notifications, mutual collection inspection, and 1-click "Add to Kokuyo Obsidian" metadata cloning that imports catalog entries directly into personal tracking lists.
 - **Community Reviews & Reaction-Driven Recommendation Feed**: Public review feeds with score calculations and community recommendation engine allowing users to publish curated suggestions with interactive, mutually exclusive Like/Dislike reactions, live counter synchronization, and role-based moderation.
 - **Multi-Tier Subscription & Dynamic Currency Engine**: Flexible subscription tier engine (Rookie, Enthusiast, Otaku, and ₹3 / $0.99 7-day Trial Pass) with automated IP geolocation currency detection (INR ₹ / USD $), admin-configurable Universal USD Markup benchmarking (((INR / 86.5) + markup) with .49/.99 rounding), automated feature limit gates, soft-locking of excess items on plan expiration, and smart dual-payment routing (domestic UPI QR micropayments vs. Dodo Payments global card/checkout). Dodo payments are credited exactly once via signature-verified webhooks or return-page verification, and manual UPI transfers carry the user's Platform ID or email in the payment note so administrators can match them before approval.
-- **Enterprise PDF Invoicing & Financial Audit Trail**: Automated transaction dashboard with KPI summaries, live search, and on-demand browser PDF Tax Invoice streaming powered by PDFKit, complete with official platform headers, Billed-To/Issued-By cards, audit clearance codes, dual-currency formatting, automated Gmail dispatch, and graceful 7-day privacy purges of user-uploaded bank payment proofs.
+- **Enterprise PDF Invoicing & Financial Audit Trail**: Automated transaction dashboard with KPI summaries, live search, and on-demand browser PDF Tax Invoice streaming powered by PDFKit, complete with official platform headers, Billed-To/Issued-By cards, audit clearance codes, dual-currency formatting, and automated Gmail dispatch. For privacy, manual-payment screenshots are deleted when an admin approves the payment; any remaining ones are purged after 7 days, and stored transaction IDs are masked.
 - **Hardened 7-Day Sliding Sessions & Anti-Abuse Device Guard**: Security architecture featuring sliding 7-day refresh tokens that automatically extend on user activity, multi-tab rotation race condition protection, strict 3-device concurrent session caps with auto-eviction, instant revocation on logout, device sign-out, password change or ban, 180-day SHA-256 account deletion cooldowns, and fail-closed hardware canvas/audio device fingerprinting (@fingerprintjs/fingerprintjs). Registration asks users to pause ad-blockers or Brave Shields so the device can be identified; login is never restricted.
-- **Administrative Analytics, Policy Versioning & Background Maintenance**: Real-time admin control panel featuring Recharts analytics, user session monitoring, manual subscription overrides, in-memory tier pricing cache invalidation, in-place markdown legal document editing (Terms, Privacy, Refund), and scheduled maintenance routines that purge stale notifications and issue compliance reminders.
+- **Administrative Analytics, Policy Versioning & Background Maintenance**: Real-time admin control panel featuring Recharts analytics, user session monitoring, manual subscription overrides, in-memory tier pricing cache invalidation, versioned in-place editing of the Terms of Service and Privacy Policy (with user re-acceptance tracking), and scheduled maintenance routines that purge stale notifications and issue policy reminders.
 
 ---
 
@@ -67,25 +67,26 @@ The backend runs automated background monitors on a rolling scheduler loop to ma
 
 | Service / Monitor | Execution Interval | Retention / Clean-up (TTL) | Action & Purpose |
 | :--- | :--- | :--- | :--- |
-| **Keep-Alive Monitor** | **Every 5 minutes** | **7 days** (`PingLog` TTL) | Pings `/api/health` to prevent free-tier container sleep; records latency metrics & logs downtime alerts |
-| **Maintenance & Notification Worker** | **Every 6 hours** | **7 days** (Notification TTL) | Purges notifications older than 7 days, dispatches policy update reminders, and re-alerts pending friend invites |
-| **Catalog Maintenance & Cover Refetch** | **On event / rolling** | Permanent Catalog Data | Resolves missing cover artwork and streaming availability links via BullMQ queues (with memory fallback) |
-| **OAuth2 Keep-Alive Check** | **Every 90 days** | **Permanent** (OAuth Refresh) | Verifies Google Gmail API OAuth2 token validity; alerts admin on credential expiration risk |
-| **Manual UPI Payment Screenshot Purge** | **Continuous / 7 days** | **7 days** (Proof Uploads) | Automatically deletes user-uploaded bank payment transfer screenshots from cloud storage for financial privacy |
-| **Sliding Session Token Rotation** | **On user request** | **7 days** (Inactivity window) | Extends active refresh tokens by 7 days on interaction; enforces strict 3-device concurrency cap |
-| **Account Deletion Abuse Cooldown** | **On user deletion** | **180 days** (`expireAfterSeconds`) | Retains SHA-256 email hash in `DeletedUser` collection to prevent immediate re-registration trial fraud |
-| **System Audit Logs** | **On error / event** | **14–45 days** (`expireAt` TTL) | Captures structured operational events, authentication anomalies, and administrative overrides via Pino |
+| **Keep-Alive Monitor** | **Every 5 minutes** | **14 days** (`PingLog` TTL) | Pings `PING_TARGET_URL` (default `/api/health`) to prevent free-tier container sleep; records response times and emails failure/recovery alerts |
+| **Notification & Reminder Worker** | **Every 6 hours** | **7 days** (notifications) | Purges notifications older than 7 days, sends policy re-acceptance reminders (at most once per 24 hours), and re-alerts friend requests pending for 7+ days |
+| **Daily Maintenance** | **Every 24 hours** | — | Reconciles subscriptions and expires lapsed trials, runs the Gmail OAuth2 keep-alive check, and purges old manual-payment screenshots |
+| **Catalog Maintenance & Cover Refetch** | **On add / every 24 hours** | **3 months** (unowned entries) | Resolves missing covers and streaming availability via BullMQ queues (in-memory fallback without Redis); removes catalog entries no user has owned for 3 months |
+| **Gmail OAuth2 Keep-Alive** | **Checked daily** | **180 days** (`GmailPingLog` TTL) | Sends a keep-alive email if no successful Gmail API call was logged in the last 30 days, so the OAuth2 refresh token stays active |
+| **Manual UPI Screenshot Purge** | **On approval / daily** | **7 days** (payment proofs) | Deletes payment screenshots from cloud storage when a payment is approved; a daily sweep removes any left after 7 days and masks stored transaction IDs |
+| **Sliding Session Token Rotation** | **On user request** | **7 days** (inactivity window) | Extends active refresh tokens by 7 days on use; enforces the 3-device session cap |
+| **Account Deletion Abuse Cooldown** | **On user deletion** | **180 days** (TTL index) | Retains a SHA-256 email hash in `DeletedUser` to prevent immediate re-registration for trial abuse |
+| **System Audit Logs** | **On event** | **45 days** (`expireAt` TTL) | Stores structured operational, authentication, payment, and admin events in a separate MongoDB log database; a 10-day sweep also clears expired logs and pings |
 
 ---
 
 ## 4. Tech Stack
 
 - **Frontend & UI**: [React 19](https://react.dev/) / [React Router 7](https://reactrouter.com/) / [Tailwind CSS 4](https://tailwindcss.com/) / [DaisyUI 5](https://daisyui.com/) / [Zustand 5](https://github.com/pmndrs/zustand) / [Recharts 3](https://recharts.org/) / [Vite 8](https://vite.dev/)
-- **Backend & APIs**: [Node.js 22 LTS](https://nodejs.org/) / [Express.js 5](https://expressjs.com/) / Modular REST Architecture / [Helmet](https://helmetjs.github.io/) / [Pino Logger](https://getpino.io/)
-- **Database & ODM**: [MongoDB Atlas](https://www.mongodb.com/) via [Mongoose 9](https://mongoosejs.com/) / Dynamic TTL Indexes / Relational Schema Mapping
+- **Backend & APIs**: [Node.js 22 LTS](https://nodejs.org/) / [Express.js 5](https://expressjs.com/) / Modular REST Architecture / [Helmet](https://helmetjs.github.io/) / [Pino](https://getpino.io/) console logging / [BullMQ](https://docs.bullmq.io/) queues
+- **Database & ODM**: [MongoDB Atlas](https://www.mongodb.com/) via [Mongoose 9](https://mongoosejs.com/) / TTL Indexes / Referenced Schemas (separate log database)
 - **Core Languages**: Modern JavaScript (ES Modules) / Strict Node.js 22 ES Syntax / HTML5 Native Drag-and-Drop API
 - **DevOps & CI/CD**: [Docker](https://www.docker.com/) (Multi-Stage Alpine) / [GitHub Actions](https://github.com/features/actions) / [GHCR](https://ghcr.io/) / `runner.js` Process Supervisor
-- **Cloud & Infrastructure**: [Render](https://render.com/) (Unified Monolith Container) / [ImageKit.io](https://imagekit.io/) CDN / [Upstash Redis](https://redis.io/)
+- **Cloud & Infrastructure**: [Render](https://render.com/) (Unified Monolith Container) / [ImageKit.io](https://imagekit.io/) CDN / [Redis](https://redis.io/) (optional; queues and rate limits fall back to memory)
 - **Services & Security**: [Dodo Payments API](https://dodopayments.com/) / Google Gmail API (OAuth2) / [PDFKit](https://pdfkit.org/) / [@fingerprintjs/fingerprintjs](https://github.com/fingerprintjs/fingerprintjs) / Sliding JWT Cookies
 - **Workspace Architecture**: [pnpm Workspaces (v11)](https://pnpm.io/) Monorepo (`kokuyo-monolith`)
 
@@ -101,12 +102,12 @@ Kokuyo Obsidian/
 │   └── workflows/
 │       └── deploy.yml          # Automated CI/CD pipeline (Quality gates, GHCR push, Render hook)
 ├── .dockerignore               # Hardened ignore rules (secrets, dependencies, build caches)
-├── Dockerfile                  # Unified multi-stage container (<220 MB Alpine image)
+├── Dockerfile                  # Unified multi-stage container (Node 22 Alpine, non-root)
 ├── runner.js                   # Process supervisor (PID 1, SIGTERM forwarding, crash restart)
 ├── package.json                # Root workspace configuration (pnpm@11.15.1, node >= 22)
 ├── pnpm-workspace.yaml         # Monorepo packages definition ('backend', 'frontend')
 ├── pnpm-lock.yaml              # Strict dependency lockfile
-├── docker-compose.yml          # Multi-container local orchestration (backend, nginx, redis)
+├── docker-compose.yml          # Multi-container local orchestration (backend, nginx frontend, redis)
 ├── backend/                    # Express 5 REST API & Cloud Services
 │   ├── config/                 # Database, Redis, and Dodo Payments gateway configuration
 │   ├── constants/              # Platform constants, default subscription tiers, legal policies
@@ -123,14 +124,14 @@ Kokuyo Obsidian/
 │   ├── package.json            # Backend dependencies & runtime scripts
 │   └── server.js               # Primary Express server entrypoint
 └── frontend/                   # React 19 + Vite 8 Single Page Application
-    ├── public/                 # Static assets (web manifest, favicon, brand icons)
+    ├── public/                 # Static assets (favicon, brand icons, robots.txt, SPA redirects)
     ├── src/
     │   ├── api/                # Centralized Axios client with request & 401 refresh interceptors
     │   ├── components/         # Reusable UI components (cards, layouts, modals, skeletons)
     │   ├── constants/          # UI constants, category definitions, filter options
     │   ├── hooks/              # Custom React lifecycle hooks
     │   ├── pages/              # Route pages (admin, auth, user collections, playlists, friends)
-    │   ├── store/              # Zustand global state stores (useAuthStore, useToastStore)
+    │   ├── store/              # Zustand global auth state (useAuthStore)
     │   ├── utils/              # Client helpers (fuzzy search, series matcher, device fingerprint)
     │   ├── App.jsx             # React Router 7 route definitions & modal wrappers
     │   ├── main.jsx            # React root DOM hydration
@@ -154,10 +155,10 @@ Kokuyo Obsidian/
 - **`Review`**: Platform reviews with ratings and moderated commentary.
 - **`Recommendation`**: Community suggestions of a catalog title from the sender's collection, with a note, rating, and mutually exclusive `likes` and `dislikes` user ID arrays.
 - **`Notification`** / **`SupportMessage`** / **`RedirectPlatform`**: In-app notifications, contact-form messages, and admin-managed watch/read redirect platforms.
-- **`LegalDocument`**: Versioned repository of Terms of Service, Privacy Policy, and Refund Policy documents enabling in-place markdown deployment and tracking user acceptance.
-- **`DeviceFingerprint`**: Hardware hash records mapping canvas, audio, and device parameters to accounts to prevent multi-trial registration abuse.
+- **`LegalDocument`**: Versioned Terms of Service and Privacy Policy documents with in-place section editing and per-user acceptance tracking. The Refund Policy is a static page.
+- **`DeviceFingerprint`**: Hashed device fingerprints (derived from canvas, audio, and hardware signals) and persistent device UUIDs linked to accounts, used to prevent multi-account trial abuse.
 - **`DeletedUser`**: Privacy-compliant SHA-256 email hashes retained with a 180-day MongoDB TTL index to enforce a strict account deletion re-registration cooldown.
-- **`PingLog`**: Historical uptime telemetry recording response times, HTTP statuses, and memory metrics with an automated 7-day TTL index.
+- **`PingLog`**: Uptime telemetry recording response times, HTTP statuses, and failure categories, with a 14-day TTL index.
 
 ### Authentication & Request Flow
 
@@ -176,8 +177,8 @@ sequenceDiagram
     DB-->>RP: Validated user document
     RP-->>FE: Access Token (15m in memory) + Refresh Cookie (7d HttpOnly)
     Note over FE,RP: Subsequent Protected API Request
-    FE->>RP: GET /api/users/collection (Bearer <token>)
-    RP->>Auth: Validate JWT Signature & Check Expiry
+    FE->>RP: GET /api/anime/mylist (Bearer <token>)
+    RP->>Auth: Validate JWT, expiry & session still active
     Auth-->>RP: Token Valid (User Context Injected)
     RP->>DB: Fetch Collection Data
     DB-->>RP: Return User Media Entries
@@ -208,7 +209,7 @@ sequenceDiagram
 PORT=5000
 NODE_ENV=production
 FRONTEND_URL=https://kokuyoobsidian.onrender.com
-BACKEND_URL=https://kokuyoobsidian.onrender.com
+# PUBLIC_APP_URL=https://kokuyoobsidian.onrender.com  # Optional: links in emails (defaults to FRONTEND_URL)
 
 # ── Database Connections ──────────────────────────────────────────────────────
 MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/kokuyo_obsidian?retryWrites=true&w=majority
@@ -226,7 +227,7 @@ GMAIL_USER=kokuyoobsidianofficial@gmail.com
 OAUTH_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
 OAUTH_CLIENT_SECRET=your_google_oauth_client_secret
 OAUTH_REFRESH_TOKEN=your_google_oauth_permanent_refresh_token
-RECEIVER_EMAIL=your_admin_notification_recipient@gmail.com
+# ADMIN_EMAIL=your_admin_notification_recipient@gmail.com  # Optional: admin alerts (defaults to GMAIL_USER)
 
 # ── ImageKit Cloud CDN (Media Covers & Screenshots) ───────────────────────────
 IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
@@ -235,13 +236,18 @@ IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id
 
 # ── Third-Party Media APIs ────────────────────────────────────────────────────
 TMDB_API_KEY=your_tmdb_api_key
+TMDB_BASE_URL=https://api.themoviedb.org/3          # Required (no default)
+TMDB_IMAGE_BASE=https://image.tmdb.org/t/p/w500     # Required (no default)
 GOOGLE_BOOKS_API_KEY=your_google_books_api_key
 IGDB_CLIENT_ID=your_twitch_igdb_client_id
 IGDB_CLIENT_SECRET=your_twitch_igdb_client_secret
-
-# ── Watch / Read Platform Shortcuts ───────────────────────────────────────────
-MOVIESMOD_URL=https://moviesmod.army
-BOLLYFLIX_URL=https://bollyflix.med
+# Optional overrides / extras:
+# JIKAN_BASE_URL=https://api.jikan.moe/v4
+# GOOGLE_BOOKS_BASE_URL=https://www.googleapis.com/books/v1
+# OPEN_LIBRARY_BASE_URL=https://openlibrary.org
+# OPEN_LIBRARY_COVERS_URL=https://covers.openlibrary.org
+# OMDB_API_KEY=...   # Admin catalog refetch: fills missing movie/series details
+# RAWG_API_KEY=...   # Admin catalog refetch: higher RAWG rate limit for games
 
 # ── Dodo Payments Gateway ─────────────────────────────────────────────────────
 DODO_PAYMENTS_API_KEY=your_dodo_payments_api_key
@@ -251,7 +257,8 @@ DODO_PAYMENTS_ENVIRONMENT=live_mode  # Use 'test_mode' for local sandbox testing
 # ── Redis Cache, Queues & Rate Limits (Optional; In-Memory fallback if unset) ─
 REDIS_URL=redis://default:<password>@your-redis-host.upstash.io:6379
 
-# ── Admin Bootstrap Password (GMAIL_USER acts as default admin email) ─────────
+# ── Admin Bootstrap (GMAIL_USER is the admin account email) ────────────────────
+# The admin account is created on first start; changing this value rotates its password on restart.
 ADMIN_PASSWORD=your_secure_admin_initial_password
 ```
 
@@ -330,8 +337,8 @@ VITE_API_URL=http://localhost:5000/api
 | Module | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- | :--- |
 | **System** | `GET` | `/ping` | Lightweight heartbeat connectivity ping (`pong`) | No |
-| | `GET` | `/api/health` | Uptime check, Redis connection status, and latency metrics | No |
-| | `GET` | `/sitemap.xml` | Dynamic XML sitemap indexing all public collections & legal routes | No |
+| | `GET` | `/api/health` | Service status, Redis connection status, timestamp, and process uptime | No |
+| | `GET` | `/sitemap.xml` | Dynamic XML sitemap of public pages, legal pages, and recommendation feeds | No |
 | **Auth** | `POST` | `/api/auth/register` | Register new user (device fingerprint required; ad-blockers/Shields must be paused) | No |
 | | `POST` | `/api/auth/verify-registration` | Complete registration via email OTP (invalidated after 5 wrong attempts) | No |
 | | `POST` | `/api/auth/login` | Authenticate credentials, issue access token & refresh cookie | No |
@@ -415,8 +422,10 @@ flowchart LR
     B -->|Pass| C["2. Docker Buildx\n(type=gha layer cache)"]
     C --> D["3. Push to GHCR\n(ghcr.io/...:latest & :sha)"]
     D --> E["4. Render Deploy Hook\n(cURL POST Trigger)"]
-    E --> F["5. Zero-Downtime Rollout\n(~40s Rolling Restart)"]
+    E --> F["5. Render Redeploy\n(pulls new image)"]
 ```
+
+The pipeline runs on pushes to `main` that change code or configuration. Documentation-only pushes (Markdown files such as this README) skip it, since they don't affect the build; the README is synced to the showcase repository by a separate workflow.
 
 1. **Pre-flight Quality Gates**:
    - Executes on an Ubuntu runner with **Node.js 22 LTS** and **pnpm 11** detected automatically from `package.json`'s `"packageManager"` field.
@@ -428,8 +437,8 @@ flowchart LR
 2. **Docker Buildx & Multi-Stage Optimization**:
    - Compiles the Vite React 19 Single Page Application into static assets (`frontend/dist`).
    - Isolates backend production dependencies cleanly via `pnpm deploy --prod --legacy`.
-   - Packages both services into a minimal Alpine runner image (`node:22-alpine`) running under an unprivileged `USER node` (<220 MB total footprint).
-   - Utilizes GitHub Actions cache (`type=gha,mode=max`) for fast incremental builds in under 2 minutes.
+   - Packages both services into a minimal Alpine runner image (`node:22-alpine`) running under an unprivileged `USER node`, with a built-in health check against `/api/health`.
+   - Uses the GitHub Actions layer cache (`type=gha,mode=max`) for faster incremental builds.
 
 3. **GHCR Publishing & Dual Tagging**:
    - Authenticates natively via `${{ secrets.GITHUB_TOKEN }}` with `packages: write` permissions.
@@ -438,7 +447,7 @@ flowchart LR
 
 4. **Zero-Downtime Render Rollout**:
    - Triggers the Render Deploy Hook via a `POST` request with a graceful chicken-and-egg fallback (exits 0 if `RENDER_DEPLOY_HOOK_URL` is not yet configured, allowing the initial image to be published).
-   - Render pulls the pre-built image from GHCR and executes a rolling restart in ~40 seconds with zero downtime.
+   - Render pulls the pre-built image from GHCR and redeploys the service.
 
 👉 Step-by-step setup (GitHub PAT credentials, Render registry access, renaming services without breaking live URLs) is kept in a private operational runbook that is not published with this repository.
 
