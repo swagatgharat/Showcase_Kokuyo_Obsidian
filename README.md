@@ -56,6 +56,7 @@ Kokuyo Obsidian solves these challenges by consolidating all six media categorie
 - **Community Reviews & Reaction-Driven Recommendation Feed**: Public review feeds with score calculations and community recommendation engine allowing users to publish curated suggestions with interactive, mutually exclusive Like/Dislike reactions, live counter synchronization, and role-based moderation.
 - **Multi-Tier Subscription & Dynamic Currency Engine**: Flexible subscription tier engine (Rookie, Enthusiast, Otaku, and ₹3 / $0.99 7-day Trial Pass) with automated IP geolocation currency detection (INR ₹ / USD $), admin-configurable Universal USD Markup benchmarking (((INR / 86.5) + markup) with .49/.99 rounding), automated feature limit gates, soft-locking of excess items on plan expiration, and smart dual-payment routing (domestic UPI QR micropayments vs. Dodo Payments global card/checkout). Dodo payments are credited exactly once via signature-verified webhooks or return-page verification, and manual UPI transfers carry the user's Platform ID or email in the payment note so administrators can match them before approval.
 - **Enterprise PDF Invoicing & Financial Audit Trail**: Automated transaction dashboard with KPI summaries, live search, and on-demand browser PDF Tax Invoice streaming powered by PDFKit, complete with official platform headers, Billed-To/Issued-By cards, audit clearance codes, dual-currency formatting, and automated Gmail dispatch. For privacy, manual-payment screenshots are deleted when an admin approves the payment; any remaining ones are purged after 7 days, and stored transaction IDs are masked.
+- **Continue with Google**: Optional Google sign-in and sign-up (Google Identity Services, verified server-side against Google's public keys). Sign-in methods are strict: Google accounts always use Google and have no password, password accounts always use their password. New Google accounts pass the same registration gates as email sign-up (age, device identification, one account per device, deletion cooldown) and skip only the email code; sensitive actions such as signing out devices or turning off 2FA are confirmed with a fresh Google sign-in instead of a password.
 - **Hardened 7-Day Sliding Sessions & Anti-Abuse Device Guard**: Security architecture featuring sliding 7-day refresh tokens that automatically extend on user activity, multi-tab rotation race condition protection, strict 3-device concurrent session caps with auto-eviction, instant revocation on logout, device sign-out, password change or ban, 180-day SHA-256 account deletion cooldowns, and fail-closed hardware canvas/audio device fingerprinting (@fingerprintjs/fingerprintjs). Registration asks users to pause ad-blockers or Brave Shields so the device can be identified; login is never restricted.
 - **Administrative Analytics, Policy Versioning & Background Maintenance**: Real-time admin control panel featuring Recharts analytics, user session monitoring, manual subscription overrides, in-memory tier pricing cache invalidation, versioned in-place editing of the Terms of Service and Privacy Policy (with user re-acceptance tracking), and scheduled maintenance routines that purge stale notifications and issue policy reminders.
 
@@ -145,7 +146,7 @@ Kokuyo Obsidian/
 
 ### Database Models / Schema Entities
 
-- **`User`**: Core account identity with `bcryptjs` password hashing, profile settings, playlist preferences, 2-step verification, and sliding refresh-token sessions (each with a stable session ID used for instant revocation), plus role-based access levels (`user`, `admin`).
+- **`User`**: Core account identity with sign-in method (`authProvider`: `password` or `google`, plus the Google account ID for Google accounts), `bcryptjs` password hashing for password accounts, profile settings, playlist preferences, 2-step verification, and sliding refresh-token sessions (each with a stable session ID used for instant revocation), plus role-based access levels (`user`, `admin`).
 - **Catalog models (`Anime`, `Manga`, `Movie`, `Series`, `Book`, `Game`)**: Shared, source-verified media catalog keyed by external IDs (AniList/MAL, TMDB, Google Books/Open Library, IGDB), storing metadata, ImageKit CDN covers, season/volume breakdowns, and streaming availability.
 - **User list models (`UserAnime`, `UserManga`, `UserMovie`, `UserSeries`, `UserBook`, `UserGame`)**: Per-user tracking entries referencing the catalog, containing status, progress counters, completion dates, playlist (`userCollection`) assignment, and `locked` flags. A unique `(user, item)` index prevents duplicates.
 - **`Subscription`**: Active billing state tracking tier levels (`Rookie`, `Enthusiast`, `Otaku`, `Trial`), billing cycles, start/expiration timestamps, and snapshot caps locked at purchase time.
@@ -228,6 +229,10 @@ OAUTH_CLIENT_ID=your_google_oauth_client_id.apps.googleusercontent.com
 OAUTH_CLIENT_SECRET=your_google_oauth_client_secret
 OAUTH_REFRESH_TOKEN=your_google_oauth_permanent_refresh_token
 # ADMIN_EMAIL=your_admin_notification_recipient@gmail.com  # Optional: admin alerts (defaults to GMAIL_USER)
+
+# ── Continue with Google (Optional; the button is hidden when unset) ──────────
+# OAuth client ID of type "Web application"; add your site URLs as Authorized JavaScript origins.
+GOOGLE_CLIENT_ID=your_web_client_id.apps.googleusercontent.com
 
 # ── ImageKit Cloud CDN (Media Covers & Screenshots) ───────────────────────────
 IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
@@ -343,6 +348,9 @@ VITE_API_URL=http://localhost:5000/api
 | | `POST` | `/api/auth/verify-registration` | Complete registration via email OTP (invalidated after 5 wrong attempts) | No |
 | | `POST` | `/api/auth/login` | Authenticate credentials, issue access token & refresh cookie | No |
 | | `POST` | `/api/auth/verify-two-step` | Complete login with the 2-step verification email code | No |
+| | `GET` | `/api/auth/google/config` | Whether Google sign-in is enabled, and the client ID for the button | No |
+| | `POST` | `/api/auth/google` | Sign in with Google, or start a Google sign-up (strict sign-in methods) | No |
+| | `POST` | `/api/auth/google/complete` | Finish a Google sign-up (date of birth, legal acceptance, device check) | No |
 | | `POST` | `/api/auth/refresh` | Rotate refresh cookie & extend the sliding 7-day session | Cookie |
 | | `POST` | `/api/auth/logout` | Revoke the current session & clear cookies | Cookie |
 | | `GET` | `/api/auth/me` | Current user profile (session tokens and OTP codes never included) | Yes |
@@ -398,7 +406,8 @@ VITE_API_URL=http://localhost:5000/api
   - Refresh tokens are transmitted strictly via `HttpOnly`, `Path=/`, `Secure`, `SameSite=None` (production) cookies, completely shielding credentials from client-side XSS extraction.
 - **Sliding 7-Day Session Management**: Sessions slide forward automatically on active usage with a rolling 7-day expiration. Concurrent multi-tab token requests are protected by an atomic grace period to prevent race-condition invalidations.
 - **Strict 3-Session Active Device Cap**: Enforces a strict maximum of 3 concurrent active sessions per user account across all tiers, preventing credential sharing while automatically evicting the oldest session upon new logins.
-- **Instant Session Revocation**: Access tokens are bound to their session, so logout, device sign-out, password changes/resets, and bans take effect on the very next request. Refresh tokens are unique per issue, and turning off 2-step verification requires the account password.
+- **Instant Session Revocation**: Access tokens are bound to their session, so logout, device sign-out, password changes/resets, and bans take effect on the very next request. Refresh tokens are unique per issue, and turning off 2-step verification requires the account password (or a fresh Google confirmation for Google accounts).
+- **Google Sign-In Verification**: Google ID tokens are verified server-side (signature, audience, expiry, verified email); sign-up tokens use a separate signing key and expire after 30 minutes, and Google re-confirmations for sensitive actions must match the account's Google ID and be under 10 minutes old.
 - **Device Fingerprint Abuse Guard**: Combines canvas, audio, and hardware platform fingerprinting (`@fingerprintjs/fingerprintjs`) with persistent device UUIDs. Registration is fail-closed: it detects ad-blockers and Brave Shields and asks the user to pause them, and the server re-checks the result. Login is never restricted.
 - **OTP Brute-Force Protection**: Every email OTP flow (registration, 2-step login, password reset) is invalidated after 5 wrong attempts, on top of per-IP+email rate limits.
 - **6-Month Account Deletion Cooldown**: Preserves a SHA-256 hash of deleted user emails in a `DeletedUser` collection for 180 days via a MongoDB TTL index, preventing abusive account re-creation loops.
